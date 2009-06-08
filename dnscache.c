@@ -23,6 +23,8 @@
 #include "okclient.h"
 #include "droproot.h"
 
+char ignoreip[4];
+
 static int packetquery(char *buf,unsigned int len,char **q,char qtype[2],char qclass[2],char id[2])
 {
   unsigned int pos;
@@ -430,6 +432,11 @@ int main()
   scan_ulong(x,&cachesize);
   if (!cache_init(cachesize))
     strerr_die3x(111,FATAL,"not enough memory for cache of size ",x);
+
+  x = env_get("IGNOREIP");
+  if (x)
+    if (!ip4_scan(x,ignoreip))
+      strerr_die3x(111,FATAL,"unable to parse IGNOREIP address ",x);
 
   if (env_get("HIDETTL"))
     response_hidettl();

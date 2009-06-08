@@ -13,6 +13,8 @@
 #include "response.h"
 #include "query.h"
 
+extern char ignoreip[];
+
 static int flagforwardonly = 0;
 
 void query_forwardonly(void)
@@ -643,6 +645,8 @@ static int doit(struct query *z,int state)
         pos = dns_packet_copy(buf,len,pos,header,10); if (!pos) goto DIE;
         if (byte_equal(header + 8,2,"\0\4")) {
           pos = dns_packet_copy(buf,len,pos,header,4); if (!pos) goto DIE;
+	  /*          if (*ignoreip) if (byte_equal(header,4,ignoreip)) goto NXDOMAIN;*/
+          if (*ignoreip) if (byte_equal(header,4,ignoreip)) goto NXDOMAIN;
           save_data(header,4);
           log_rr(whichserver,t1,DNS_T_A,header,4,ttl);
         }
