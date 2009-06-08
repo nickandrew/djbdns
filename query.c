@@ -13,6 +13,8 @@
 #include "response.h"
 #include "query.h"
 
+extern stralloc ignoreip;
+
 static int flagforwardonly = 0;
 
 void query_forwardonly(void)
@@ -193,6 +195,7 @@ static int doit(struct query *z,int state)
   int k;
   int p;
   int q;
+  unsigned int ii;
 
   errno = error_io;
   if (state == 1) goto HAVEPACKET;
@@ -643,6 +646,9 @@ static int doit(struct query *z,int state)
         pos = dns_packet_copy(buf,len,pos,header,10); if (!pos) goto DIE;
         if (byte_equal(header + 8,2,"\0\4")) {
           pos = dns_packet_copy(buf,len,pos,header,4); if (!pos) goto DIE;
+          if (ignoreip.len)
+	    for(ii = 0; ii < ignoreip.len; ii+= 4)
+	      if (byte_equal(header,4,ignoreip.s+ii)) goto NXDOMAIN;
           save_data(header,4);
           log_rr(whichserver,t1,DNS_T_A,header,4,ttl);
         }
