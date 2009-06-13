@@ -515,7 +515,7 @@ warn-shsgr
 	./choose clr tryshsgr hasshsgr.h1 hasshsgr.h2 > hasshsgr.h
 
 hier.o: \
-compile hier.c auto_home.h
+compile hier.c auto_home.h install.h
 	./compile hier.c
 
 install: \
