@@ -13,13 +13,6 @@
 #include "response.h"
 #include "query.h"
 
-static int flagforwardonly = 0;
-
-void query_forwardonly(void)
-{
-  flagforwardonly = 1;
-}
-
 static void cachegeneric(const char type[2],const char *d,const char *data,unsigned int datalen,uint32 ttl)
 {
   unsigned int len;
@@ -376,13 +369,14 @@ static int doit(struct query *z,int state)
 
   for (;;) {
     if (roots(z->servers[z->level],d)) {
+      recflag(&z->isrecursive[z->level],d) ;
       for (j = 0;j < QUERY_MAXNS;++j)
         dns_domain_free(&z->ns[z->level][j]);
       z->control[z->level] = d;
       break;
     }
 
-    if (!flagforwardonly && (z->level < 2))
+    if (!z->isrecursive[z->level] && (z->level < 2))
       if (dlen < 255) {
         byte_copy(key,2,DNS_T_NS);
         byte_copy(key + 2,dlen,d);
@@ -431,11 +425,11 @@ static int doit(struct query *z,int state)
   dns_sortip(z->servers[z->level],64);
   if (z->level) {
     log_tx(z->name[z->level],DNS_T_A,z->control[z->level],z->servers[z->level],z->level);
-    if (dns_transmit_start(&z->dt,z->servers[z->level],flagforwardonly,z->name[z->level],DNS_T_A,z->localip) == -1) goto DIE;
+    if (dns_transmit_start(&z->dt,z->servers[z->level],z->isrecursive[z->level],z->name[z->level],DNS_T_A,z->localip) == -1) goto DIE;
   }
   else {
     log_tx(z->name[0],z->type,z->control[0],z->servers[0],0);
-    if (dns_transmit_start(&z->dt,z->servers[0],flagforwardonly,z->name[0],z->type,z->localip) == -1) goto DIE;
+    if (dns_transmit_start(&z->dt,z->servers[0],z->isrecursive[z->level],z->name[0],z->type,z->localip) == -1) goto DIE;
   }
   return 0;
 

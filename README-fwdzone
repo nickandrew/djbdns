@@ -1,0 +1,31 @@
+This is djbdns-1.04-fwdzone. By Laurent Bercot <ska@idealx.com>
+
+ You may download, copy, use, modify and redistribute this patch under
+EXACTLY the same terms as djbdns. You don't have to get in touch with
+me to redistribute modified versions of this patch, but I'd like you to
+let me know. Thanks.
+
+
+ Instructions :
+
+ * Compile and install djbdns.
+
+ * The FORWARDONLY environment variable doesn't work anymore. By default,
+dnscache performs only iterative queries, like in pre-1.03 versions.
+
+ * Configure the root/servers directory of dnscache :
+   echo dns.server > my.iterative.zone
+
+   echo dns.cache > my.recursive.zone
+   chmod +t my.recursive.zone
+
+  If my.zone has the sticky bit set, dnscache will perform recursive queries
+for the zone : my.zone must contain a list of DNS caches to whom dnscache
+will forward the queries.
+  If my.zone has the sticky bit cleared, dnscache will perform iterative
+queries for the zone : my.zone must contains a list of appropriate DNS
+servers.
+
+ If @ has the sticky bit set, dnscache will forward any queries it cannot
+find a preconfigured zone for. This is most useful behind a firewall with
+a split-DNS configuration.

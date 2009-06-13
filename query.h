@@ -15,6 +15,7 @@ struct query {
   char *control[QUERY_MAXLEVEL]; /* pointing inside name */
   char *ns[QUERY_MAXLEVEL][QUERY_MAXNS];
   char servers[QUERY_MAXLEVEL][64];
+  int isrecursive[QUERY_MAXLEVEL];
   char *alias[QUERY_MAXALIAS];
   uint32 aliasttl[QUERY_MAXALIAS];
   char localip[4];
