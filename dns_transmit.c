@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <unistd.h>
 #include "socket.h"
 #include "alloc.h"
@@ -98,29 +99,46 @@ static int thisudp(struct dns_transmit *d)
 {
   const char *ip;
 
-  socketfree(d);
+  /* open a new socket if there isn't already one */
+  if (! d->s1) {
+    /* choose a random port number for this socket */
+    d->query[2] = dns_random(256);
+    d->query[3] = dns_random(256);
+
+    d->s1 = 1 + socket_udp();
+
+    if (! d->s1) {
+      dns_transmit_free(d);
+      return -1;
+    }
+
+    if (randombind(d) == -1) {
+      dns_transmit_free(d);
+      return -1;
+    }
+  }
 
   while (d->udploop < 4) {
     for (;d->curserver < 16;++d->curserver) {
       ip = d->servers + 4 * d->curserver;
       if (byte_diff(ip,4,"\0\0\0\0")) {
-	d->query[2] = dns_random(256);
-	d->query[3] = dns_random(256);
-  
-        d->s1 = 1 + socket_udp();
-        if (!d->s1) { dns_transmit_free(d); return -1; }
-	if (randombind(d) == -1) { dns_transmit_free(d); return -1; }
+	struct sockaddr_in sa;
 
-        if (socket_connect4(d->s1 - 1,ip,53) == 0)
-          if (send(d->s1 - 1,d->query + 2,d->querylen - 2,0) == d->querylen - 2) {
-            struct taia now;
-            taia_now(&now);
-            taia_uint(&d->deadline,timeouts[d->udploop]);
-            taia_add(&d->deadline,&d->deadline,&now);
-            d->tcpstate = 0;
-            return 0;
-          }
-  
+	/* set the destination address */
+	byte_zero(&sa, sizeof sa);
+	sa.sin_family = AF_INET;
+	uint16_pack_big((char *) &sa.sin_port, 53);
+	byte_copy((char *) &sa.sin_addr, 4, ip);
+
+        if (sendto(d->s1 - 1,d->query + 2,d->querylen - 2,0, (struct sockaddr *) &sa, sizeof sa) == d->querylen - 2) {
+          struct taia now;
+          taia_now(&now);
+          taia_uint(&d->deadline,timeouts[d->udploop]);
+          taia_add(&d->deadline,&d->deadline,&now);
+          d->tcpstate = 0;
+          return 0;
+        }
+
         socketfree(d);
       }
     }
