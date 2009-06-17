@@ -101,7 +101,7 @@ static int thisudp(struct dns_transmit *d)
 
   /* open a new socket if there isn't already one */
   if (! d->s1) {
-    /* choose a random port number for this socket */
+    /* choose a random query number for all requests */
     d->query[2] = dns_random(256);
     d->query[3] = dns_random(256);
 
