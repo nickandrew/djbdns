@@ -2,7 +2,27 @@
 
 SHELL=/bin/sh
 
+# Things to clean
+
+TARGETS=dnscache-conf dnscache walldns-conf walldns rbldns-conf rbldns \
+rbldns-data pickdns-conf pickdns pickdns-data tinydns-conf tinydns \
+tinydns-data tinydns-get tinydns-edit axfr-get axfrdns-conf axfrdns \
+dnsip dnsipq dnsname dnstxt dnsmx dnsfilter random-ip dnsqr dnsq \
+dnstrace dnstracesort cachetest utime rts
+
+# Other things to clean
+
+OTHERS=auto-str auto_home.c chkshsgr choose compile direntry.h hasdevtcp.h \
+hasshsgr.h install instcheck iopause.h load makelib select.h socket.lib \
+systype uint32.h uint64.h
+
 default: it
+
+clean:
+	for file in $(TARGETS) ; do rm -f $$file ; done
+	for file in $(OTHERS) ; do rm -f $$file ; done
+	for file in *.o ; do rm -f $$file ; done
+	for file in *.a ; do rm -f $$file ; done
 
 alloc.a: \
 makelib alloc.o alloc_re.o getln.o getln2.o stralloc_cat.o \
