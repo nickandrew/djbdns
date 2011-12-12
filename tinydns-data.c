@@ -66,16 +66,23 @@ void ipprefix_cat(stralloc *out,char *s)
   char ch;
   unsigned int j;
 
-  for (;;)
-    if (*s == '.')
-      ++s;
-    else {
-      j = scan_ulong(s,&u);
-      if (!j) return;
-      s += j;
-      ch = u;
-      if (!stralloc_catb(out,&ch,1)) nomem();
-    }
+  if (*s=='s') {
+    ++s;
+    if (!stralloc_catb(out,"s",1) || !stralloc_cats(out,s)) nomem();
+  } else {
+    if (*s=='f') ++s;
+    if (!stralloc_catb(out,"f",1)) nomem();
+    for (;;)
+      if (*s == '.')
+	++s;
+      else {
+	j = scan_ulong(s,&u);
+	if (!j) return;
+	s += j;
+	ch = u;
+	if (!stralloc_catb(out,&ch,1)) nomem();
+      }
+  }
 }
 
 void txtparse(stralloc *sa)

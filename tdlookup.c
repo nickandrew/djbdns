@@ -9,6 +9,7 @@
 #include "seek.h"
 #include "response.h"
 #include "ip6.h"
+#include "clientloc.h"
 
 static int want(const char *owner,const char type[2])
 {
@@ -62,7 +63,7 @@ static int find(char *d,int flagwild)
     if (cdb_read(&c,data,dlen,cdb_datapos(&c)) == -1) return -1;
     dpos = dns_packet_copy(data,dlen,0,type,2); if (!dpos) return -1;
     dpos = dns_packet_copy(data,dlen,dpos,&ch,1); if (!dpos) return -1;
-    if ((ch == '=' + 1) || (ch == '*' + 1)) {
+    if ((ch == '=' + 1) || (ch == '*' + 1) || (ch == '6' + 1)) {
       --ch;
       dpos = dns_packet_copy(data,dlen,dpos,recordloc,2); if (!dpos) return -1;
       if (byte_diff(recordloc,2,clientloc)) continue;
@@ -306,27 +307,13 @@ int respond(char *q,char qtype[2],char ip[16])
 {
   int fd;
   int r;
-  char key[6];
+
+  find_client_loc(clientloc, ip);
 
   tai_now(&now);
   fd = open_read("data.cdb");
   if (fd == -1) return 0;
   cdb_init(&c,fd);
-
-  byte_zero(clientloc,2);
-  key[0] = 0;
-  key[1] = '%';
-  if (byte_equal(ip,12,V4mappedprefix)) {
-    byte_copy(key + 2,4,ip+12);
-    r = cdb_find(&c,key,6);
-    if (!r) r = cdb_find(&c,key,5);
-    if (!r) r = cdb_find(&c,key,4);
-    if (!r) r = cdb_find(&c,key,3);
-    if (!r) r = cdb_find(&c,key,2);
-    if (r == -1) return 0;
-    if (r && (cdb_datalen(&c) == 2))
-      if (cdb_read(&c,clientloc,2,cdb_datapos(&c)) == -1) return 0;
-  }
 
   r = doit(q,qtype);
 

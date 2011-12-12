@@ -209,7 +209,7 @@ static int doit(struct query *z,int state)
   NEWNAME:
   if (++z->loop == 100) goto DIE;
   d = z->name[z->level];
-  dtype = z->level ? DNS_T_A : z->type;
+  dtype = z->level ? (z->ipv6[z->level] ? DNS_T_AAAA : DNS_T_A) : z->type;
   dlen = dns_domain_length(d);
 
   if (globalip(d,misc)) {
@@ -479,6 +479,10 @@ static int doit(struct query *z,int state)
     if (typematch(DNS_T_A,dtype)) {
       byte_copy(key,2,DNS_T_A);
       cached = cache_get(key,dlen + 2,&cachedlen,&ttl);
+      if (cached && !cachedlen && z->level) {	/* if we were looking the A record up to find an NS, try IPv6 too */
+	z->ipv6[z->level]=1;
+	goto NEWNAME;
+      }
       if (cached && (cachedlen || byte_diff(dtype,2,DNS_T_ANY))) {
 	if (z->level) {
 	  log_cachedanswer(d,DNS_T_A);
@@ -608,6 +612,7 @@ static int doit(struct query *z,int state)
         if (!dns_domain_copy(&z->name[z->level + 1],z->ns[z->level][j])) goto DIE;
         dns_domain_free(&z->ns[z->level][j]);
         ++z->level;
+	z->ipv6[z->level]=0;
         goto NEWNAME;
       }
       dns_domain_free(&z->ns[z->level][j]);
@@ -620,8 +625,9 @@ static int doit(struct query *z,int state)
 
   dns_sortip6(z->servers[z->level],256);
   if (z->level) {
-    log_tx(z->name[z->level],DNS_T_A,z->control[z->level],z->servers[z->level],z->level);
-    if (dns_transmit_start(&z->dt,z->servers[z->level],flagforwardonly,z->name[z->level],DNS_T_A,z->localip) == -1) goto DIE;
+    dtype = z->ipv6[z->level] ? DNS_T_AAAA : DNS_T_A;
+    log_tx(z->name[z->level],dtype,z->control[z->level],z->servers[z->level],z->level);
+    if (dns_transmit_start(&z->dt,z->servers[z->level],flagforwardonly,z->name[z->level],dtype,z->localip) == -1) goto DIE;
   }
   else {
     log_tx(z->name[0],z->type,z->control[0],z->servers[0],0);
@@ -646,7 +652,8 @@ static int doit(struct query *z,int state)
   whichserver = z->dt.servers + 16 * z->dt.curserver;
   control = z->control[z->level];
   d = z->name[z->level];
-  dtype = z->level ? DNS_T_A : z->type;
+/*  dtype = z->level ? DNS_T_A : z->type; */
+  dtype = z->level ? (z->ipv6[z->level] ? DNS_T_AAAA : DNS_T_A) : z->type;
 
   pos = dns_packet_copy(buf,len,0,header,12); if (!pos) goto DIE;
   pos = dns_packet_skipname(buf,len,pos); if (!pos) goto DIE;
@@ -919,6 +926,11 @@ static int doit(struct query *z,int state)
           save_start();
           save_finish(dtype,d,soattl);
 	  log_nodata(whichserver,d,dtype,soattl);
+	  if (z->level && !byte_diff(DNS_T_A,2,dtype)) {
+	    d = z->name[z->level];
+	    z->ipv6[z->level] = 1;
+	    goto NEWNAME; /* retry, will ask for AAAA next */
+	  }
         }
 
   log_stats();
@@ -939,6 +951,14 @@ static int doit(struct query *z,int state)
                   if (byte_equal(z->servers[z->level - 1] + k,16,V6any)) {
 		    byte_copy(z->servers[z->level - 1] + k,12,V4mappedprefix);
                     if (!dns_packet_copy(buf,len,pos,z->servers[z->level - 1] + k + 12,4)) goto DIE;
+                    break;
+                  }
+          if (typematch(header,DNS_T_AAAA))
+            if (byte_equal(header + 2,2,DNS_C_IN)) /* should always be true */
+              if (datalen == 16)
+                for (k = 0;k < 256;k += 16)
+                  if (byte_equal(z->servers[z->level - 1] + k,16,V6any)) {
+                    if (!dns_packet_copy(buf,len,pos,z->servers[z->level - 1] + k,16)) goto DIE;
                     break;
                   }
         pos += datalen;
@@ -996,7 +1016,7 @@ static int doit(struct query *z,int state)
   if (!dns_domain_suffix(d,referral)) goto DIE;
   control = d + dns_domain_suffixpos(d,referral);
   z->control[z->level] = control;
-  byte_zero(z->servers[z->level],64);
+  byte_zero(z->servers[z->level],256);
   for (j = 0;j < QUERY_MAXNS;++j)
     dns_domain_free(&z->ns[z->level][j]);
   k = 0;
@@ -1044,6 +1064,7 @@ int query_start(struct query *z,char *dn,char type[2],char class[2],char localip
   byte_copy(z->class,2,class);
   byte_copy(z->localip,16,localip);
   z->scope_id=scope_id;
+  z->ipv6[0]=0;
 
   return doit(z,0);
 }

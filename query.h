@@ -17,6 +17,7 @@ struct query {
   char servers[QUERY_MAXLEVEL][256];
   char *alias[QUERY_MAXALIAS];
   uint32 aliasttl[QUERY_MAXALIAS];
+  char ipv6[QUERY_MAXLEVEL];
   char localip[16];
   uint32 scope_id;
   char type[2];

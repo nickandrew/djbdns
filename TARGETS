@@ -20,6 +20,7 @@ strerr_sys.o
 buffer.a
 buffer_read.o
 buffer_write.o
+clientloc.o
 error.o
 error_str.o
 ndelay_off.o

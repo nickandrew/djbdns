@@ -52,10 +52,10 @@ iopause.h taia.h tai.h uint64.h taia.h
 
 axfrdns: \
 load axfrdns.o iopause.o droproot.o tdlookup.o response.o qlog.o \
-prot.o timeoutread.o timeoutwrite.o dns.a libtai.a alloc.a env.a \
+prot.o timeoutread.o timeoutwrite.o clientloc.o dns.a libtai.a alloc.a env.a \
 cdb.a buffer.a unix.a byte.a
 	./load axfrdns iopause.o droproot.o tdlookup.o response.o \
-	qlog.o prot.o timeoutread.o timeoutwrite.o dns.a libtai.a \
+	qlog.o prot.o timeoutread.o timeoutwrite.o clientloc.o dns.a libtai.a \
 	alloc.a env.a cdb.a buffer.a unix.a byte.a 
 
 axfrdns-conf: \
@@ -73,7 +73,7 @@ compile axfrdns.c droproot.h exit.h env.h uint32.h uint16.h ip4.h \
 tai.h uint64.h buffer.h timeoutread.h timeoutwrite.h open.h seek.h \
 cdb.h uint32.h stralloc.h gen_alloc.h strerr.h str.h byte.h case.h \
 dns.h stralloc.h iopause.h taia.h tai.h taia.h scan.h qlog.h uint16.h \
-response.h uint32.h
+response.h uint32.h clientloc.h
 	./compile axfrdns.c
 
 buffer.a: \
@@ -210,6 +210,10 @@ warn-auto.sh choose.sh conf-home
 	| sed s}HOME}"`head -1 conf-home`"}g \
 	> choose
 	chmod 755 choose
+
+clientloc.o: \
+compile clientloc.c open.h byte.h cdb.h ip6.h
+	./compile clientloc.c
 
 compile: \
 warn-auto.sh conf-cc
@@ -1068,7 +1072,7 @@ compile taia_uint.c taia.h tai.h uint64.h
 tdlookup.o: \
 compile tdlookup.c uint16.h open.h tai.h uint64.h cdb.h uint32.h \
 byte.h case.h dns.h stralloc.h gen_alloc.h iopause.h taia.h tai.h \
-taia.h seek.h response.h uint32.h ip6.h
+taia.h seek.h response.h uint32.h ip6.h clientloc.h
 	./compile tdlookup.c
 
 timeoutread.o: \
@@ -1083,10 +1087,10 @@ timeoutwrite.h
 
 tinydns: \
 load tinydns.o server.o iopause.o droproot.o tdlookup.o response.o qlog.o \
-prot.o dns.a libtai.a env.a cdb.a alloc.a buffer.a unix.a byte.a \
+prot.o clientloc.o dns.a libtai.a env.a cdb.a alloc.a buffer.a unix.a byte.a \
 socket.lib
 	./load tinydns server.o iopause.o droproot.o tdlookup.o response.o \
-	qlog.o prot.o dns.a libtai.a env.a cdb.a alloc.a buffer.a \
+	qlog.o prot.o clientloc.o dns.a libtai.a env.a cdb.a alloc.a buffer.a \
 	unix.a byte.a  `cat socket.lib`
 
 tinydns-conf: \
@@ -1123,9 +1127,9 @@ dns.h stralloc.h iopause.h taia.h tai.h uint64.h taia.h
 
 tinydns-get: \
 load tinydns-get.o tdlookup.o response.o printpacket.o printrecord.o \
-parsetype.o dns.a libtai.a cdb.a buffer.a alloc.a unix.a byte.a
+parsetype.o clientloc.o dns.a libtai.a cdb.a buffer.a alloc.a unix.a byte.a
 	./load tinydns-get tdlookup.o response.o printpacket.o \
-	printrecord.o parsetype.o dns.a libtai.a cdb.a buffer.a \
+	printrecord.o parsetype.o clientloc.o dns.a libtai.a cdb.a buffer.a \
 	alloc.a unix.a byte.a 
 
 tinydns-get.o: \
